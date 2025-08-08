@@ -11,6 +11,14 @@ from PySide6.QtGui import QPixmap, QAction
 from PySide6.QtCore import Qt, QThread, Signal, QSettings
 from qt_material import apply_stylesheet
 
+def get_config_path():
+    if getattr(sys, 'frozen', False):
+        # 打包后的exe文件
+        return os.path.join(os.path.dirname(sys.executable), 'config.ini')
+    else:
+        # 开发环境的py文件
+        return os.path.join(os.path.dirname(__file__), 'config.ini')
+
 class SearchWorker(QThread):
     thumbnail_ready = Signal(QPixmap, str)
     finished = Signal(int)
@@ -68,7 +76,7 @@ class WallpaperApp(QMainWindow):
         super().__init__()
         self.setWindowTitle('Unsplash 壁纸浏览器')
         self.resize(900, 600)
-        self.settings = QSettings('config.ini', QSettings.IniFormat)
+        self.settings = QSettings(get_config_path(), QSettings.IniFormat)
         apply_stylesheet(app, theme='dark_teal.xml')
         self.load_settings()
         self.init_ui()
@@ -76,6 +84,7 @@ class WallpaperApp(QMainWindow):
     def init_ui(self):
         container = QWidget()
         layout = QVBoxLayout()
+
         input_layout = QWidget()
         input_layout.setLayout(QGridLayout())
         self.search_input = QLineEdit(self.last_keyword)
@@ -83,18 +92,24 @@ class WallpaperApp(QMainWindow):
         self.search_button.clicked.connect(self.start_search)
         input_layout.layout().addWidget(self.search_input, 0, 0)
         input_layout.layout().addWidget(self.search_button, 0, 1)
+
         layout.addWidget(input_layout)
+
         self.scroll_area = QScrollArea()
         self.thumb_container = QWidget()
         self.thumb_layout = QGridLayout()
         self.thumb_container.setLayout(self.thumb_layout)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(self.thumb_container)
+
         layout.addWidget(self.scroll_area)
         container.setLayout(layout)
         self.setCentralWidget(container)
+        
         self.progress_bar = QProgressBar()
         self.statusBar().addPermanentWidget(self.progress_bar)
+
+
         settings_action = QAction('设置', self)
         settings_action.triggered.connect(self.choose_directory)
         self.menuBar().addAction(settings_action)
